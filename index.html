@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>학교폭력 예방 체험</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:white;font-family:-apple-system,BlinkMacSystemFont,Arial;overflow:hidden}
+.phone{width:100%;max-width:430px;height:100dvh;margin:auto;position:relative;overflow:hidden;background:#344b6d}
+.status{position:absolute;z-index:40;top:12px;left:25px;right:25px;display:flex;justify-content:space-between;font-size:14px;font-weight:bold}
+
+/* 잠금 화면 */
+.lock{
+position:absolute;inset:0;z-index:60;
+background:linear-gradient(150deg,#637f9d,#263b59 75%,#17233b);
+display:flex;align-items:center;flex-direction:column;
+padding-top:110px;touch-action:none;
+transition:transform .4s,opacity .4s
+}
+.lock.unlocked{transform:translateY(-100%);opacity:0;pointer-events:none}
+.lock-date{font-size:18px}
+.lock-time{font-size:88px;font-weight:200}
+.lock-hint{position:absolute;bottom:35px;text-align:center;color:#ddd;font-size:13px}
+.lock-hint span{display:block;font-size:27px;animation:up 1s infinite alternate}
+@keyframes up{to{transform:translateY(-9px)}}
+
+/* 패턴 */
+#patternScreen{
+display:none;width:100%;height:100%;position:absolute;inset:0;
+background:#17243b;align-items:center;flex-direction:column;justify-content:center
+}
+#patternGrid{
+display:grid;grid-template-columns:repeat(3,65px);gap:25px;
+margin:45px 0;touch-action:none
+}
+.dot{
+width:18px;height:18px;background:#ffffff99;border-radius:50%;
+margin:auto;box-shadow:0 0 8px #ffffff33
+}
+.dot.active{background:#64d8ff;transform:scale(1.5);box-shadow:0 0 15px #64d8ff}
+.unlock-button{
+background:#ffffff22;color:white;border:1px solid #ffffff55;
+padding:12px 25px;border-radius:20px
+}
+
+/* 홈 화면 */
+.home{
+position:absolute;inset:0;padding:65px 22px 25px;
+background:linear-gradient(150deg,#647f9e,#344b6d 50%,#17233b);
+display:flex;flex-direction:column
+}
+.pages{display:flex;flex:1;transition:transform .3s;width:200%;min-height:0}
+.page{width:50%;padding:0 8px}
+.widget{height:110px;padding:12px;border-radius:20px;background:#ffffff22;margin-bottom:25px}
+.widget h2{margin:8px 0;font-size:23px}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:27px 10px}
+.app{
+border:0;background:none;color:white;display:flex;flex-direction:column;
+align-items:center;gap:6px;font-size:12px;cursor:pointer
+}
+.icon{
+width:57px;height:57px;border-radius:15px;display:grid;
+place-items:center;font-size:29px;box-shadow:0 4px 12px #0003
+}
+.kakao{background:#fee500;color:#222}
+.phoneicon{background:#24c66c}
+.chrome{background:#fff}
+.store{background:#1688f5}
+.camera{background:#555}
+.settings{background:#747b85}
+.photos{background:white}
+.message{background:#23bd72}
+.dock{padding:13px 10px;border-radius:25px;background:#ffffff30;display:flex;justify-content:space-around}
+.dock .app{gap:0}
+.page-dots{text-align:center;font-size:12px;color:#ffffffaa;padding:8px}
+
+/* 알림 */
+.notifications{
+position:absolute;z-index:50;top:48px;left:12px;right:12px;
+display:flex;flex-direction:column;gap:8px;pointer-events:none
+}
+.notice{
+background:#f7f7f8f5;color:#171717;border-radius:16px;
+padding:12px 14px;box-shadow:0 5px 18px #0004;
+animation:noticeIn .3s;pointer-events:auto;cursor:pointer;
+transition:opacity .25s,transform .25s
+}
+.notice.removing{opacity:0;transform:translateY(-20px)}
+.notice-head{display:flex;justify-content:space-between;color:#777;font-size:11px;margin-bottom:5px}
+.notice strong{font-size:14px}
+.notice p{margin:4px 0 0;font-size:14px}
+@keyframes noticeIn{
+from{opacity:0;transform:translateY(-25px)}
+to{opacity:1;transform:translateY(0)}
+}
+
+/* 앱 화면 */
+.app-screen{
+position:absolute;inset:0;z-index:30;background:white;color:#222;
+display:none;flex-direction:column
+}
+.app-header{
+height:65px;padding:30px 16px 10px;background:#fee500;
+font-weight:bold;display:flex;align-items:center;gap:15px;flex-shrink:0
+}
+.back{border:0;background:none;font-size:26px}
+.kakao-tabs{
+display:flex;height:48px;border-bottom:1px solid #eee;
+align-items:center;justify-content:space-around;color:#777;font-size:13px
+}
+.kakao-tabs span:first-child{color:#222;font-weight:bold;border-bottom:2px solid #222;padding:14px}
+.chat-list{flex:1;overflow:auto;background:white}
+.room{
+display:flex;align-items:center;padding:14px 15px;
+border-bottom:1px solid #f2f2f2;gap:12px;cursor:pointer
+}
+.room-avatar{
+width:48px;height:48px;border-radius:18px;background:#e5e5e5;
+display:grid;place-items:center;font-size:23px;flex-shrink:0
+}
+.room-info{flex:1;min-width:0}
+.room-name{font-size:15px;font-weight:600}
+.room-preview{
+font-size:12px;color:#888;margin-top:5px;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.room-time{font-size:10px;color:#aaa}
+.unread{background:#f04b43;color:white;border-radius:50%;padding:3px 7px;font-size:10px;margin-top:6px;display:inline-block}
+
+/* 대화 내용 */
+.chat-area{flex:1;padding:12px;overflow:auto;background:#abc4d9}
+.chat-date{text-align:center;font-size:11px;color:white;margin:12px}
+.chat-row{display:flex;margin:12px 0;gap:7px;align-items:flex-start}
+.avatar{
+width:32px;height:32px;border-radius:50%;background:#ddd;
+display:grid;place-items:center;color:#555;flex-shrink:0
+}
+.bubble{
+padding:10px 12px;border-radius:4px 14px 14px 14px;
+background:white;max-width:80%;font-size:14px;color:#222;line-height:1.5
+}
+.chat-input{padding:13px;background:white;color:#999;border-top:1px solid #eee;flex-shrink:0}
+.empty{
+text-align:center;color:#aaa;padding-top:100px;line-height:2
+}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<div class="status">
+<span id="statusTime">12:47</span>
+<span>●●● Wi-Fi ▰</span>
+</div>
+
+<!-- 잠금 화면 -->
+<div class="lock" id="lock">
+
+<div id="lockMain">
+<div class="lock-date">11월 17일 화요일</div>
+<div class="lock-time" id="lockTime">12:47</div>
+<div class="lock-hint"><span>⌃</span>위로 밀어서 잠금 해제</div>
+</div>
+
+<div id="patternScreen">
+<h2>패턴을 그리세요</h2>
+<p style="color:#aaa;font-size:13px">잠금 해제를 위해 패턴을 입력하세요</p>
+
+<div id="patternGrid">
+<div class="dot"></div><div class="dot"></div><div class="dot"></div>
+<div class="dot"></div><div class="dot"></div><div class="dot"></div>
+<div class="dot"></div><div class="dot"></div><div class="dot"></div>
+</div>
+
+<p id="patternText" style="color:#ccc;font-size:13px">패턴을 그려주세요</p>
+<button class="unlock-button" onclick="unlock()">잠금 해제</button>
+</div>
+
+</div>
+
+<!-- 홈 화면 -->
+<main class="home" id="home">
+<div class="pages" id="pages">
+
+<div class="page">
+<div class="widget">
+<small>화요일 · 11월 17일</small>
+<h2>좋은 하루 보내세요.</h2>
+<small>오늘도 평범한 하루</small>
+</div>
+
+<div class="apps">
+<button class="app" onclick="openApp('kakao')"><div class="icon kakao">💬</div>카카오톡</button>
+<button class="app" onclick="openApp('phone')"><div class="icon phoneicon">☎</div>전화</button>
+<button class="app" onclick="openApp('chrome')"><div class="icon chrome">🌐</div>Chrome</button>
+<button class="app" onclick="openApp('store')"><div class="icon store">A</div>App Store</button>
+<button class="app" onclick="openApp('camera')"><div class="icon camera">📷</div>카메라</button>
+<button class="app" onclick="openApp('settings')"><div class="icon settings">⚙️</div>설정</button>
+<button class="app" onclick="openApp('photos')"><div class="icon photos">🌈</div>사진</button>
+<button class="app" onclick="openApp('message')"><div class="icon message">✉️</div>메시지</button>
+</div>
+</div>
+
+<div class="page">
+<div class="widget">
+<small>두 번째 페이지</small>
+<h2>나의 앱</h2>
+<small>스마트폰 홈 화면</small>
+</div>
+<div class="apps">
+<button class="app" onclick="openApp('calendar')"><div class="icon store">📅</div>캘린더</button>
+<button class="app" onclick="openApp('notes')"><div class="icon photos">📝</div>메모</button>
+</div>
+</div>
+
+</div>
+
+<div class="page-dots" id="dots">● ○</div>
+
+<div class="dock">
+<button class="app" onclick="openApp('phone')"><div class="icon phoneicon">☎</div></button>
+<button class="app" onclick="openApp('kakao')"><div class="icon kakao">💬</div></button>
+<button class="app" onclick="openApp('chrome')"><div class="icon chrome">🌐</div></button>
+<button class="app" onclick="openApp('camera')"><div class="icon camera">📷</div></button>
+</div>
+</main>
+
+<!-- 알림 영역 -->
+<div class="notifications" id="notifications"></div>
+
+<!-- 앱 -->
+<section class="app-screen" id="appScreen">
+<div class="app-header">
+<button class="back" onclick="goBack()">‹</button>
+<span id="appTitle">카카오톡</span>
+</div>
+<div id="appBody" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+</section>
+
+</div>
+
+<script>
+let unlocked=false;
+let started=false;
+let page=0;
+let currentApp="";
+let currentRoom=null;
+
+const lock=document.getElementById("lock");
+const area=document.getElementById("notifications");
+
+// 잠금 화면 스와이프
+let startY=0;
+
+lock.addEventListener("touchstart",e=>{
+startY=e.touches[0].clientY;
+},{passive:true});
+
+lock.addEventListener("touchend",e=>{
+if(startY-e.changedTouches[0].clientY>55)showPattern();
+},{passive:true});
+
+lock.addEventListener("mousedown",e=>startY=e.clientY);
+lock.addEventListener("mouseup",e=>{
+if(startY-e.clientY>55)showPattern();
+});
+
+function showPattern(){
+if(unlocked)return;
+document.getElementById("lockMain").style.display="none";
+document.getElementById("patternScreen").style.display="flex";
+}
+
+// 패턴 입력
+const grid=document.getElementById("patternGrid");
+const dots=[...grid.querySelectorAll(".dot")];
+let drawing=false;
+let selected=new Set();
+
+function dotIndex(e){
+const rect=grid.getBoundingClientRect();
+const x=e.clientX-rect.left;
+const y=e.clientY-rect.top;
+const col=Math.round((x-32.5)/90);
+const row=Math.round((y-32.5)/90);
+if(col<0||col>2||row<0||row>2)return -1;
+return row*3+col;
+}
+
+function selectDot(i){
+if(i<0||selected.has(i))return;
+selected.add(i);
+dots[i].classList.add("active");
+}
+
+grid.addEventListener("pointerdown",e=>{
+drawing=true;
+selected.clear();
+dots.forEach(d=>d.classList.remove("active"));
+grid.setPointerCapture(e.pointerId);
+selectDot(dotIndex(e));
+});
+
+grid.addEventListener("pointermove",e=>{
+if(drawing)selectDot(dotIndex(e));
+});
+
+grid.addEventListener("pointerup",()=>{
+if(!drawing)return;
+drawing=false;
+document.getElementById("patternText").textContent="잠금 해제 중...";
+setTimeout(unlock,400);
+});
+
+function unlock(){
+if(unlocked)return;
+unlocked=true;
+lock.classList.add("unlocked");
+if(!started){
+started=true;
+startMessages();
+}
+}
+
+// 시계
+function updateClock(){
+const t=new Date().toLocaleTimeString("ko-KR",{
+hour:"2-digit",minute:"2-digit",hour12:false
+});
+document.getElementById("lockTime").textContent=t;
+document.getElementById("statusTime").textContent=t;
+}
+updateClock();
+setInterval(updateClock,1000);
+
+// 홈 화면 좌우 스와이프
+let homeX=0;
+const home=document.getElementById("home");
+
+home.addEventListener("touchstart",e=>{
+homeX=e.touches[0].clientX;
+},{passive:true});
+
+home.addEventListener("touchend",e=>{
+const dx=e.changedTouches[0].clientX-homeX;
+if(Math.abs(dx)>65){
+page=dx<0?1:0;
+updatePage();
+}
+},{passive:true});
+
+function updatePage(){
+document.getElementById("pages").style.transform=`translateX(-${page*50}%)`;
+document.getElementById("dots").textContent=page===0?"● ○":"○ ●";
+}
+
+// 카카오톡 대화 데이터: 처음에는 빈 상태
+const rooms=[];
+
+// 알림 생성 및 대화방 연결
+function addNotice(name,message){
+
+const box=document.createElement("div");
+box.className="notice";
+
+const head=document.createElement("div");
+head.className="notice-head";
+head.innerHTML="<span>● 카카오톡</span><span>지금</span>";
+
+const strong=document.createElement("strong");
+strong.textContent=name;
+
+const p=document.createElement("p");
+p.textContent=message;
+
+box.append(head,strong,p);
+
+// 기존 대화방 확인
+let index=rooms.findIndex(r=>r.name===name);
+
+if(index===-1){
+rooms.unshift({
+name:name,
+avatar:name==="엄마"?"👩":"👤",
+preview:message,
+unread:1,
+messages:[[name,message]]
+});
+}else{
+const room=rooms[index];
+room.preview=message;
+room.messages.push([name,message]);
+room.unread=(room.unread||0)+1;
+
+// 최신 메시지가 목록 위로 오도록 이동
+rooms.splice(index,1);
+rooms.unshift(room);
+}
+
+// 알림 클릭
+box.addEventListener("click",()=>{
+clearTimeout(removeTimer);
+box.remove();
+openApp("kakao");
+openRoom(rooms.findIndex(r=>r.name===name));
+});
+
+area.prepend(box);
+
+// 알림 3초 후 자동 삭제
+const removeTimer=setTimeout(()=>{
+box.classList.add("removing");
+setTimeout(()=>box.remove(),250);
+},3000);
+
+}
+
+// 알림 시간표
+function startMessages(){
+
+setTimeout(()=>{
+addNotice("엄마","아들 밥 먹었어? 먹고 와~");
+},10000);
+
+const messages=[
+["익명","야 개웃김ㅋㅋㅋㅋ"],
+["친구 1","야 나대지 마"],
+["친구 2","ㅋㅋㅋㅋㅋㅋ"],
+["익명","ㅅ#&#^~아"],
+["친구 3","너 진짜 왜 그러냐?"],
+["친구 1","단톡에서 나가라"],
+["익명","ㅋㅋㅋ 진짜 어이없네"],
+["친구 2","아무도 너 안 좋아함"],
+["익명","ㅂ#@~아"],
+["친구 3","내일 학교에서 보자"],
+["친구 1","읽씹하냐?"],
+["익명","그냥 조용히 살아"]
+];
+
+setTimeout(()=>{
+let i=0;
+const timer=setInterval(()=>{
+if(i>=messages.length){
+clearInterval(timer);
+return;
+}
+addNotice(messages[i][0],messages[i][1]);
+i++;
+},650);
+},14000);
+
+}
+
+// 앱 열기
+function openApp(app){
+currentApp=app;
+currentRoom=null;
+
+document.getElementById("appScreen").style.display="flex";
+
+if(app==="kakao"){
+showChatList();
+return;
+}
+
+document.getElementById("appTitle").textContent=app;
+const body=document.getElementById("appBody");
+body.innerHTML="";
+
+const info=document.createElement("div");
+info.style.padding="25px";
+info.textContent=app+" 앱 화면";
+body.appendChild(info);
+}
+
+// 채팅 목록
+function showChatList(){
+
+document.getElementById("appTitle").textContent="카카오톡";
+
+const body=document.getElementById("appBody");
+
+body.innerHTML=`
+<div class="kakao-tabs">
+<span>친구</span>
+<span>채팅</span>
+<span>오픈채팅</span>
+<span>더보기</span>
+</div>
+<div class="chat-list" id="chatList"></div>
+`;
+
+const list=document.getElementById("chatList");
+
+if(rooms.length===0){
+list.innerHTML=`
+<div class="empty">
+아직 대화가 없습니다.
+<br>
+새로운 메시지를 기다리는 중...
+</div>`;
+return;
+}
+
+rooms.forEach((room,index)=>{
+
+const row=document.createElement("div");
+row.className="room";
+
+const avatar=document.createElement("div");
+avatar.className="room-avatar";
+avatar.textContent=room.avatar;
+
+const info=document.createElement("div");
+info.className="room-info";
+
+const name=document.createElement("div");
+name.className="room-name";
+name.textContent=room.name;
+
+const preview=document.createElement("div");
+preview.className="room-preview";
+preview.textContent=room.preview;
+
+info.append(name,preview);
+
+const right=document.createElement("div");
+right.className="room-time";
+right.textContent="지금";
+
+if(room.unread){
+const unread=document.createElement("span");
+unread.className="unread";
+unread.textContent=room.unread;
+right.append(document.createElement("br"),unread);
+}
+
+row.append(avatar,info,right);
+row.onclick=()=>openRoom(index);
+
+list.appendChild(row);
+});
+
+}
+
+// 대화방 열기
+function openRoom(index){
+
+if(index<0||!rooms[index])return;
+
+currentRoom=index;
+const room=rooms[index];
+
+room.unread=0;
+
+document.getElementById("appTitle").textContent=room.name;
+
+const body=document.getElementById("appBody");
+
+body.innerHTML=`
+<div class="chat-area" id="chatArea">
+<div class="chat-date">2026년 11월 17일</div>
+</div>
+<div class="chat-input">메시지를 입력하세요...</div>
+`;
+
+const chat=document.getElementById("chatArea");
+
+room.messages.forEach(msg=>{
+
+const row=document.createElement("div");
+row.className="chat-row";
+
+const avatar=document.createElement("div");
+avatar.className="avatar";
+avatar.textContent=room.avatar;
+
+const bubble=document.createElement("div");
+bubble.className="bubble";
+bubble.textContent=msg[1];
+
+const sender=document.createElement("div");
+sender.style.cssText="font-size:10px;color:#555;margin-bottom:4px";
+sender.textContent=msg[0];
+
+const wrapper=document.createElement("div");
+wrapper.append(sender,bubble);
+
+row.append(avatar,wrapper);
+chat.appendChild(row);
+
+});
+
+chat.scrollTop=chat.scrollHeight;
+}
+
+// 뒤로 가기
+function goBack(){
+
+if(currentApp==="kakao"&&currentRoom!==null){
+currentRoom=null;
+showChatList();
+return;
+}
+
+document.getElementById("appScreen").style.display="none";
+currentApp="";
+}
+</script>
+</body>
+</html>
